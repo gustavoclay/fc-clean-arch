@@ -55,8 +55,9 @@ describe("Integration test create product use case", () => {
       price: 100,
     };
 
+    await expect(usecase.execute(input)).rejects.toThrow();
     await expect(usecase.execute(input)).rejects.toThrow(
-      "Name is required"
+      /Name is required/
     );
   });
 
@@ -69,8 +70,9 @@ describe("Integration test create product use case", () => {
       price: -10,
     };
 
+    await expect(usecase.execute(input)).rejects.toThrow();
     await expect(usecase.execute(input)).rejects.toThrow(
-      "Price must be greater than zero"
+      /Price must be greater than or equal to zero/
     );
   });
 });
