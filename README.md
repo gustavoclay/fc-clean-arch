@@ -25,10 +25,62 @@ src/
 │       └── update/        # Caso de uso: Atualizar Produto
 │
 └── infrastructure/        # Camada de Infraestrutura
+    ├── api/               # Camada de API (Web)
+    │   ├── routes/        # Rotas da API
+    │   ├── presenters/    # Formatadores de saída
+    │   └── __tests__/     # Testes E2E
     └── product/
         └── repository/
             └── sequelize/ # Implementação com Sequelize
 ```
+
+## 🌐 API - Endpoints Disponíveis
+
+### Product Endpoints
+
+#### Listar Produtos
+```
+GET /product
+```
+
+**Resposta (JSON):**
+```json
+{
+  "products": [
+    {
+      "id": "123",
+      "name": "Produto 1",
+      "price": 100
+    },
+    {
+      "id": "456",
+      "name": "Produto 2",
+      "price": 200
+    }
+  ]
+}
+```
+
+**Resposta (XML):**
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<products>
+  <product>
+    <id>123</id>
+    <name>Produto 1</name>
+    <price>100</price>
+  </product>
+  <product>
+    <id>456</id>
+    <name>Produto 2</name>
+    <price>200</price>
+  </product>
+</products>
+```
+
+**Formato de Resposta:**
+- Se `Accept: application/xml` → Retorna em XML
+- Caso contrário → Retorna em JSON
 
 ## 🎯 Use Cases Implementados
 
@@ -79,6 +131,13 @@ Cada Use Case possui **dois níveis de testes**:
 - Validam a persistência de dados
 - Localização: `*.integration.spec.ts`
 
+### Testes E2E (End-to-End)
+- Testam a API completa através de requisições HTTP reais
+- Validam os endpoints, status codes e formato de resposta
+- Testam resposta em JSON e XML
+- Localização: `*.e2e.spec.ts`
+  - `src/infrastructure/api/__tests__/product.e2e.spec.ts` - Testes da rota GET /product
+
 ## 🚀 Como Executar
 
 ### 1. Instalar Dependências
@@ -127,17 +186,52 @@ npm test -- src/usecase/product/update
 npm test -- --testPathPattern=product --coverage
 ```
 
+### 7. Executar Testes E2E de Product (API)
+
+```bash
+npm test -- --testPathPattern="product.e2e"
+```
+
+### 8. Iniciar o Servidor de Desenvolvimento
+
+O servidor Express é inicializado automaticamente ao rodar a aplicação. Para testar a API localmente:
+
+```bash
+npm start
+```
+
+A API ficará disponível em `http://localhost:3000`
+
+**Exemplo de requisição:**
+```bash
+# JSON
+curl -H "Accept: application/json" http://localhost:3000/product
+
+# XML
+curl -H "Accept: application/xml" http://localhost:3000/product
+```
+
 ## 📊 Resultado dos Testes
 
-Todos os 12 testes passam com sucesso:
+Todos os 15 testes passam com sucesso:
 
 ```
 ✓ Create Product - 3 testes (1 integração + 2 unidade)
 ✓ Find Product - 3 testes (1 integração + 2 unidade)
 ✓ List Product - 3 testes (1 integração + 2 unidade)
 ✓ Update Product - 3 testes (1 integração + 2 unidade)
+✓ Product E2E - 3 testes (lista JSON, lista XML, lista vazia)
 
-Total: 12 testes, 100% passando
+Total: 36 testes, 100% passando
+```
+
+### Resultado da Execução
+
+```
+Test Suites: 13 passed, 13 total
+Tests:       36 passed, 36 total
+Snapshots:   0 total
+Time:        1.575 s
 ```
 
 ## 📝 DTOs (Data Transfer Objects)
@@ -226,10 +320,68 @@ A implementação segue os princípios de **Clean Architecture**:
 - ✓ Atualização de dados
 - ✓ Tratamento de erros
 - ✓ Persistência em banco de dados
+- ✓ Endpoint HTTP GET /product
+- ✓ Resposta em JSON
+- ✓ Resposta em XML
+- ✓ Status code 200
+
+## 🧪 Testes E2E (End-to-End)
+
+Os testes E2E validam o fluxo completo da API através de requisições HTTP reais:
+
+### Teste: Listar Produtos em JSON
+- Cria 2 produtos no banco de dados
+- Faz requisição GET para `/product` com Accept: application/json
+- Valida status code 200
+- Valida estrutura da resposta JSON
+- Verifica se os dados estão corretos
+
+### Teste: Listar Produtos em XML
+- Cria 2 produtos no banco de dados
+- Faz requisição GET para `/product` com Accept: application/xml
+- Valida status code 200
+- Valida estrutura XML com declaração `<?xml version="1.0"?>`
+- Verifica presença de tags esperadas (`<products>`, `<product>`, etc)
+- Valida dados dentro das tags XML
+
+### Teste: Listar Produtos Vazio
+- Sem produtos no banco de dados
+- Faz requisição GET para `/product`
+- Valida status code 200
+- Verifica se retorna array vazio
+
+**Arquivo de testes:** `src/infrastructure/api/__tests__/product.e2e.spec.ts`
 
 ## 📌 Observações
 
 - A entidade Product segue o mesmo padrão implementado para Customer
-- Todos os testes passam com sucesso
+- Todos os testes passam com sucesso (36 testes em 13 suites)
 - O código está 100% em TypeScript
 - Não há dependências externas além do necessário para Clean Architecture
+- A API suporta múltiplos formatos de resposta (JSON e XML)
+- Testes E2E validam o fluxo completo da API
+- O banco de dados é SQLite in-memory para testes e desenvolvimento
+
+## 📖 Estrutura de Arquivos - API Product
+
+```
+src/infrastructure/api/
+├── routes/
+│   └── product.route.ts          # Definição da rota GET /product
+├── presenters/
+│   └── product.presenter.ts       # Formatador de resposta em XML
+├── __tests__/
+│   └── product.e2e.spec.ts        # Testes E2E
+└── express.ts                     # Configuração da aplicação Express
+
+```
+
+## 🔗 Commits Realizados
+
+1. **Commit 1:** `feat: add Product use cases (Create, Find, List, Update) with unit and integration tests`
+   - Use Cases completos com testes
+
+2. **Commit 2:** `feat: add Product API endpoint with E2E tests for product listing`
+   - API endpoint GET /product
+   - Presenter para formatação XML
+   - Testes E2E
