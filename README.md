@@ -138,7 +138,56 @@ Cada Use Case possui **dois níveis de testes**:
 - Localização: `*.e2e.spec.ts`
   - `src/infrastructure/api/__tests__/product.e2e.spec.ts` - Testes da rota GET /product
 
-## 🚀 Como Executar
+## � Notification Pattern
+
+A entidade **Product** implementa o **Notification Pattern** para validação. Este padrão permite acumular múltiplos erros de validação e reportá-los de uma única vez, melhorando a experiência do usuário ao fornecer todas as inconsistências simultaneamente.
+
+### Como Funciona
+
+Em vez de lançar uma exceção imediatamente quando uma regra de negócio é violada, a entidade adiciona o erro a um container de notificações:
+
+1. **Validação Silenciosa**: Erros são coletados na `notification`
+2. **Múltiplos Erros**: Todos os erros são capturados em uma única passada
+3. **Relatório Consolidado**: Ao final, se houver erros, lança `NotificationError` com todos
+
+### Exemplo de Uso
+
+```typescript
+// Tentando criar um produto com múltiplos erros
+try {
+  const product = new Product("", "", -50); // id vazio, name vazio, price negativo
+} catch (error) {
+  if (error instanceof NotificationError) {
+    console.log(error.errors);
+    // [
+    //   { context: "product", message: "Id is required" },
+    //   { context: "product", message: "Name is required" },
+    //   { context: "product", message: "Price must be greater than or equal to zero" }
+    // ]
+  }
+}
+```
+
+### Teste de Múltiplos Erros
+
+Existe um teste específico que valida a captura de múltiplos erros simultâneos:
+
+```bash
+npm test -- src/domain/product/entity/product.spec.ts -t "should throw error with multiple validation errors simultaneously"
+```
+
+Este teste garante que a entidade captura todas as 3 violações de regra de negócio de uma vez.
+
+### Componentes do Notification Pattern
+
+- **Entity**: Classe abstrata base que fornece `notification: Notification`
+- **Notification**: Container que acumula erros com `addError()` e `hasErrors()`
+- **NotificationError**: Exceção que encapsula todos os erros capturados
+- **ValidatorInterface**: Interface para implementação de validadores
+- **ProductYupValidator**: Implementação de validação usando Yup (validação declarativa)
+- **ProductValidatorFactory**: Factory para criar instâncias do validador
+
+## �🚀 Como Executar
 
 ### 1. Instalar Dependências
 
@@ -213,25 +262,30 @@ curl -H "Accept: application/xml" http://localhost:3000/product
 
 ## 📊 Resultado dos Testes
 
-Todos os 15 testes passam com sucesso:
+Todos os testes passam com sucesso, incluindo o novo teste de múltiplos erros simultâneos:
 
 ```
+✓ Domain - Product Entity: 8 testes (com Notification Pattern)
+  - Validação individual de campos
+  - Teste de múltiplos erros simultâneos ⭐ (obrigatório)
+  - Testes de mudança de nome e preço
+
 ✓ Create Product - 3 testes (1 integração + 2 unidade)
 ✓ Find Product - 3 testes (1 integração + 2 unidade)
 ✓ List Product - 3 testes (1 integração + 2 unidade)
 ✓ Update Product - 3 testes (1 integração + 2 unidade)
 ✓ Product E2E - 3 testes (lista JSON, lista XML, lista vazia)
 
-Total: 36 testes, 100% passando
+Total: 81 testes, 100% passando (28 suites)
 ```
 
 ### Resultado da Execução
 
 ```
-Test Suites: 13 passed, 13 total
-Tests:       36 passed, 36 total
+Test Suites: 28 passed, 28 total
+Tests:       81 passed, 81 total
 Snapshots:   0 total
-Time:        1.575 s
+Time:        ~2s
 ```
 
 ## 📝 DTOs (Data Transfer Objects)
